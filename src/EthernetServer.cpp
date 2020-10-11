@@ -37,6 +37,31 @@ void EthernetServer::begin()
 	}
 }
 
+void EthernetServer::end()
+{
+	uint8_t sockindex = MAX_SOCK_NUM;
+	for (uint8_t i = 0; i < MAX_SOCK_NUM; i++) {
+		if (server_port[i] == _port) {
+			sockindex = i;
+			break;
+		}
+	}
+	Ethernet.socketDisconnect(sockindex);
+	unsigned long start = millis();
+
+	// wait up to a second for the connection to close
+	do {
+		if (Ethernet.socketStatus(sockindex) == SnSR::CLOSED) {
+			sockindex = MAX_SOCK_NUM;
+			return; // exit the loop
+		}
+		delay(1);
+	} while (millis() - start < 1000);
+
+	// if it hasn't closed, close it forcefully
+	Ethernet.socketClose(sockindex);
+}
+
 EthernetClient EthernetServer::available()
 {
 	bool listening = false;
